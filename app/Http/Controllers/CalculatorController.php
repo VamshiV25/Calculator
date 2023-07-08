@@ -6,8 +6,62 @@ use Illuminate\Http\Request;
 
 use App\Models\Calculator;
 
+use Illuminate\Support\Facades\DB;
+
 class CalculatorController extends Controller
 {
+    //show method will display one record based on id
+    public function show($id){
+        $alert = request()->session()->get('alert');
+        // $record = DB::table('calculators')->where('id',$id)->first();
+        $record = DB::table('calculators')->find($id);
+        // dd($record);
+        return view ('calculator.show')
+                    ->with ('data',$record)
+                    ->with('alert',$alert);;
+    }
+
+    //update method will display to update one record based on id
+    // shows it to user in the form page
+    public function update($id){
+
+        $record = Calculator::find($id);
+        return view ('calculator.update')->with('data',$record);
+
+    }
+
+    // savedata will update the values to database
+    public function savedata($id){
+
+        $record = Calculator::find($id);
+
+        $record->a = request()->get('a');
+        $record->b = request()->get('b');
+        $record->opr = request()->get('opr');
+
+        if(request()->get('opr') == 'add')
+            $record->result = $record->a + $record->b;
+        else if(request()->get('opr') == 'subtract')
+            $record->result = $record->a - $record->b;
+        else if(request()->get('opr') == 'multiply')
+            $record->result = $record->a * $record->b;
+
+        $record->save();
+
+        $alert = "You have Successfully updated the record(".$record->id.")";
+        return redirect()->to('calculator/show/'.$id)
+                         ->with('alert',$alert);
+        // dd($data);
+
+    }
+
+    public function destroy($id){
+
+        $record = Calculator::find($id);
+        if($record)
+        $record->delete();
+        return redirect()->to('calculator/logs');
+    }
     
     public function form(){
 
@@ -56,7 +110,7 @@ class CalculatorController extends Controller
 
     }
       
-     public function queries() {
+    public function queries() {
 
          // this will return all the records
         $vmc = new calculator();
@@ -82,7 +136,8 @@ class CalculatorController extends Controller
         }
           // this will return first record
         if($filter == 'first'){
-            echo "First record <br> "; 
+            echo "First record <br> ";
+           
             $d = $vmc->first();
             echo "id - ". $d->id . "<br>";
             echo "a - ". $d->a . "<br>";
@@ -107,7 +162,7 @@ class CalculatorController extends Controller
         //this will return top 3 records
         if($filter == 'top3'){
             $data=$vmc->limit(3)->get();
-            echo "Top 3 records " .$data->count(). "<br>";
+            echo "<b>Top 3 records " .$data->count(). "</b><br>";
 
             foreach($data as $d){
                echo "id - ". $d->id . " <<>> ";
@@ -131,7 +186,33 @@ class CalculatorController extends Controller
                 echo "created_at - ". $d->created_at . "<br>";
             }
         }
+
+        // Aggregate function
+        if($filter == 'a') {
+            if($value =='sum')
+                $data = $vmc->sum('a');
+            else if($value =='min')
+                $data = $vmc->min('a');
+            else if( $value == 'max')
+                $data = $vmc->max('a');
+            else if( $value == 'avg')
+                $data = $vmc->avg('a');
+
+            echo "Column (".$filter.")<br><br>Operation(".$value.")<br><br>Result : ".$data;
+        }
+
+        // Pluck
+        if($filter == 'pluck') {
+            $data = $vmc->pluck($value);
+            dd($data);
+        }
+
+        // Group By
+        if($filter == 'groupby') {
+            $data = $vmc->get()->groupby('opr');
+        //     dd($data);
+        }
     }
 } 
-         // return view ('calculator.logs')->with('data',$data
+         // return view ('calculator.logs')->with('data',$data)
     
